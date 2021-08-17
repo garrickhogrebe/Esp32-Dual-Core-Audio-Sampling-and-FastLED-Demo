@@ -21,15 +21,13 @@
 #define SAMPLING_FREQ   40000         // Hz, must be 40000 or less due to ADC conversion time. Determines maximum frequency that can be analysed by the FFT Fmax=sampleF/2.
 #define COLOR_ORDER     GRB           // If colours look wrong, play with this
 #define CHIPSET         WS2812B       // LED strip type
-#define MAX_MILLIAMPS   2000          // Careful with the amount of power here if running off USB port
-#define LED_VOLTS       5             // Usually 5 or 12
 #define NUM_BANDS       16            // To change this, you will need to change the bunch of if statements describing the mapping from bins to bands
 
 #define NOISE           4000           // Used as a crude noise filter, values below this are ignored. Try lowering this if you dont pick up audio data.
 
-#define NUM_LEDS       100           // Total number of LEDs
+#define NUM_LEDS       167           // Total number of LEDs
 #define BRIGHTNESS      100           //Brightness
-#define FRAMES_PER_SECOND 200         //Used to insert delay
+#define FRAMES_PER_SECOND 120         //Used to insert delay
 
 TaskHandle_t samplingTask;
 SemaphoreHandle_t bandLock;
@@ -52,7 +50,6 @@ uint8_t colorTimer = 0;
 void setup() {
   Serial.begin(115200);
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalSMD5050);
-  FastLED.setMaxPowerInVoltsAndMilliamps(LED_VOLTS, MAX_MILLIAMPS);
   FastLED.setBrightness(BRIGHTNESS);
   FastLED.clear();
 
@@ -120,30 +117,41 @@ void samplingLoop(void * parameter){//Our function to sample audio data and run 
   }
 }
 
+
+int prev = 0; //used for smoothing out the bar with weighted average
+int total = 0;
+
 void loop() {//Loop is defualt to core 1 on esp32
 
 //Fade the leds - Leds farther from the center are faded more
   for(int i = 0; i < NUM_LEDS; i++){
-    fadeToBlackBy(&leds[i] , 1, abs(i - (NUM_LEDS/2))/5 + 8);
+    fadeToBlackBy(leds, NUM_LEDS, 50);
+    //fadeToBlackBy(&leds[i] , 1, abs(i - (NUM_LEDS/2))/5 + 8);
   }    
+
+  //Take the lock
   xSemaphoreTake(bandLock, portMAX_DELAY);
 
-  //Determine the height of the bar. This equation is wriiten such that as the bar becomes larger, it becomes "harder" to expand
-  //Feel free to edit these two variables and see what happens
-  int base_component = 1500; //Increasing makes the bar generally shorter
-  int distance_component = 100; //Increasing makes it easier for the bar to reach the edges
-  height = (gbandValues[0] + gbandValues[1] + gbandValues[2])/(base_component + (gbandValues[0] + gbandValues[1] + gbandValues[2])/distance_component) ;
+  //Figure out how much total "Volume" is present by adding all band values together
+  total = 0;
+  for (int x = 0; x < NUM_BANDS; x++){
+    total += gbandValues[x];
+  }
   
   //We are done with bandValues - Free the lock
   xSemaphoreGive(bandLock);
 
+  //Adjust this constant to change how far out the bar goes
+  height = total/40000;
+
   //Make sure the bar does not go outside our LED array
-  if (height < 0){
-    height = 0;
-  }
   if (height > (NUM_LEDS - 1)/2){
     height = (NUM_LEDS - 1)/2;
   }
+
+  //Weighted Average to smooth out how the bar grows and shrinks
+  height = (prev*2 + 3*height)/5;
+  prev = height;
 
   //Write the leds
   for (int x = 0; x < height; x++){
@@ -155,7 +163,8 @@ void loop() {//Loop is defualt to core 1 on esp32
   EVERY_N_MILLISECONDS(800) {
     colorTimer++;
   }
-  
+
+
   FastLED.show();
   FastLED.delay(1000/FRAMES_PER_SECOND);
 }
