@@ -108,7 +108,7 @@ void samplingLoop(void * parameter){//Our function to sample audio data and run 
     }
   }
 
-  //Copy values to global - By using another array to hold these values our LED writing task on core 1 doesn't have to wait for this task to finish sampling. It will only have to wait for these values to be copied which is much faster.
+  //Copy values to global - By using another array to hold these values our LED writing task on core 1 doesn't have to wait for this task to finish sampling. It will only have to wait for these values to be copied which should be faster
   xSemaphoreTake(bandLock, portMAX_DELAY);
   for (int x = 0; x < NUM_BANDS; x++){
     gbandValues[x] = bandValues[x];
