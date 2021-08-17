@@ -61,7 +61,7 @@ void setup() {
   xTaskCreatePinnedToCore(samplingLoop, "Sampling Task", 10000, NULL, 0, &samplingTask, 0);
 }
 
-int height = 0;
+
 
 void samplingLoop(void * parameter){//Our function to sample audio data and run repeatedly on core 0
  for(;;){
@@ -117,7 +117,7 @@ void samplingLoop(void * parameter){//Our function to sample audio data and run 
   }
 }
 
-
+int height = 0;
 int prev = 0; //used for smoothing out the bar with weighted average
 int total = 0;
 
