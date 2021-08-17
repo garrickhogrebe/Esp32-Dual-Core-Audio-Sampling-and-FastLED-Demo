@@ -130,7 +130,7 @@ void loop() {//Loop is defualt to core 1 on esp32
 
   //Determine the height of the bar. This equation is wriiten such that as the bar becomes larger, it becomes "harder" to expand
   //Feel free to edit these two variables and see what happens
-  int base_component = 1300; //Increasing makes the bar generally shorter
+  int base_component = 1500; //Increasing makes the bar generally shorter
   int distance_component = 100; //Increasing makes it easier for the bar to reach the edges
   height = (gbandValues[0] + gbandValues[1] + gbandValues[2])/(base_component + (gbandValues[0] + gbandValues[1] + gbandValues[2])/distance_component) ;
   
