@@ -123,11 +123,8 @@ int total = 0;
 
 void loop() {//Loop is defualt to core 1 on esp32
 
-//Fade the leds - Leds farther from the center are faded more
-  for(int i = 0; i < NUM_LEDS; i++){
-    fadeToBlackBy(leds, NUM_LEDS, 50);
-    //fadeToBlackBy(&leds[i] , 1, abs(i - (NUM_LEDS/2))/5 + 8);
-  }    
+//Fade the leds
+  fadeToBlackBy(leds, NUM_LEDS, 50);
 
   //Take the lock
   xSemaphoreTake(bandLock, portMAX_DELAY);
